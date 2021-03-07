@@ -27,10 +27,9 @@ func (cfg Config) String() string {
 }
 
 func (cfg *Config) assignFieldValue(field, value string) {
-	fmt.Printf("Assign %s = %s\n", field, value)
+	fmt.Printf("Assign field=%s = value=%s\n", field, value)
 	switch field {
 	case "dbtype":
-		fmt.Println("Assign dbtype " + value)
 		cfg.dbtype = value
 	case "dbhost":
 		cfg.dbhost = value
@@ -59,8 +58,8 @@ func Parse(filename string) (cfg Config, err error) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "$CFG->") {
-			field := strings.Split(line, "->")[1]
-			value := strings.Split(field, "=")[1]
+			field := strings.Split(strings.Split(line, "->")[1], "=")[0]
+			value := strings.Split(strings.Split(line, "->")[1], "=")[1]
 			cfg.assignFieldValue(field, value)
 		}
 	}
