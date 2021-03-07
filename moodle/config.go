@@ -27,7 +27,6 @@ func (cfg Config) String() string {
 }
 
 func (cfg *Config) assignFieldValue(field, value string) {
-	fmt.Printf("Assign field=%s = value=%s\n", field, value)
 	switch field {
 	case "dbtype":
 		cfg.dbtype = value
@@ -39,8 +38,6 @@ func (cfg *Config) assignFieldValue(field, value string) {
 		cfg.dbuser = value
 	case "dbpass":
 		cfg.dbpass = value
-	default:
-		fmt.Printf("Unknown config %s", value)
 	}
 }
 
@@ -58,11 +55,24 @@ func Parse(filename string) (cfg Config, err error) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "$CFG->") {
-			field := strings.Split(strings.Split(line, "->")[1], "=")[0]
-			value := strings.Split(strings.Split(line, "->")[1], "=")[1]
-			cfg.assignFieldValue(field, value)
+			cfg.assignFieldValue(parseLine(line))
 		}
 	}
 	err = scanner.Err()
+	return
+}
+
+// Parses one line of config.php into field and value
+func parseLine(line string) (field, value string) {
+	field_n_value := strings.Split(line, "->")[1]
+	field = strings.TrimSpace(strings.Split(field_n_value, "=")[0])
+	value = cleanValue(strings.TrimSpace(strings.Split(field_n_value, "=")[1]))
+	return
+}
+
+// Clean a value from trailing ";", possible comments, and surrounding "'"
+func cleanValue(value string) (retval string) {
+	retval = strings.Split(value, ";")[0]
+	retval = strings.Trim(retval, "'")
 	return
 }
