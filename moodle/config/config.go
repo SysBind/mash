@@ -1,4 +1,5 @@
-package moodle
+// moodle/config
+package config
 
 import (
 	"bufio"
@@ -24,6 +25,30 @@ func (cfg Config) String() string {
 		cfg.dbpass,
 		cfg.dbhost,
 		cfg.dbname)
+}
+
+// Data Source Name
+func (cfg Config) DSN() string {
+	hoststr := ""
+
+	if cfg.dbhost != "localhost" {
+		hoststr = fmt.Sprintf("tcp(%s)", cfg.dbhost)
+	}
+
+	return fmt.Sprintf("%s:%s@%s/%s",
+		cfg.dbuser,
+		cfg.dbpass,
+		hoststr,
+		cfg.dbname)
+}
+
+// Convert to go sql driver name
+func (cfg Config) DriverName() string {
+	switch cfg.dbtype {
+	case "mariadb":
+		return "mysql"
+	}
+	return "unknown"
 }
 
 func (cfg *Config) assignFieldValue(field, value string) {
