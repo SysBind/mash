@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -23,6 +24,15 @@ func main() {
 	db := database.Open(cfg.DriverName(), cfg.DSN(), ctx)
 	defer db.Close()
 
+	autoBackupSettings := config.GetAutoBackupSettings(db)
+
+	if !autoBackupSettings.Active {
+		fmt.Println("Automated Course Backups not enabled")
+		return
+	}
+
+	fmt.Println(autoBackupSettings)
+
 	appSignal := make(chan os.Signal, 3)
 	signal.Notify(appSignal, os.Interrupt)
 
@@ -32,4 +42,6 @@ func main() {
 			stop()
 		}
 	}()
+
+	config.GetAutoBackupSettings(db)
 }

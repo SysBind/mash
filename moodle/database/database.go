@@ -4,7 +4,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"time"
 
@@ -19,7 +18,6 @@ type Database struct {
 func Open(DriverName string, DSN string, ctx context.Context) (db Database) {
 	var err error
 	db.ctx = ctx
-	fmt.Printf("calling Open(%s, %s)..", DriverName, DSN)
 	db.pool, err = sql.Open(DriverName, DSN)
 	if err != nil {
 		// This will not be a connection error, but a DSN parse error or
@@ -48,4 +46,8 @@ func (db *Database) Ping() {
 	if err := db.pool.PingContext(ctx); err != nil {
 		log.Fatalf("unable to connect to database: %v", err)
 	}
+}
+
+func (db *Database) Query(query string) (*sql.Rows, error) {
+	return db.pool.QueryContext(db.ctx, query)
 }
