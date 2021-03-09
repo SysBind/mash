@@ -13,7 +13,10 @@ This will serve as a POC for the moodle/ go package
 
 ### Unit Testing
 
-Copy moodle/testdata/config-dist.php to moodle/testdata/config.php,
-Adjust Parameters, Run clean installation of moodle (>=3.8),
+Copy moodle/testdata/config-dist.php to moodle source direcotry,
+Adjust Parameters, Run clean installation of moodle (>=3.8).
+
+Than symlink to moodle/testdata/config.php,
 This config.php need to contain $CFG->dirroot pointing to moodle's code
+
 Than ```go test ./...```
