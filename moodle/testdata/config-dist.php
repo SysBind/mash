@@ -21,6 +21,8 @@ $CFG->wwwroot   = 'http://localhost:8000';
 $CFG->dataroot  = '/var/tmp/moodledata';
 $CFG->admin     = 'admin';
 
+$CFG->dirroot   = '/var/tmp/moodle'
+
 $CFG->directorypermissions = 0777;
 
 require_once(__DIR__ . '/lib/setup.php');
