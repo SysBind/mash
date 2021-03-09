@@ -16,3 +16,4 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 moodle-automated-course-backup
+moodle/testdata/config.php
