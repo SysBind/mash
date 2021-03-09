@@ -28,7 +28,7 @@ func (settings *AutoBackup) assignFieldValue(field, value string) {
 }
 
 func (settings *AutoBackup) String() string {
-	return fmt.Sprintf("Active: %b", settings.Active)
+	return fmt.Sprintf("Active: %t", settings.Active)
 }
 
 func GetAutoBackupSettings(db database.Database) (settings AutoBackup) {
