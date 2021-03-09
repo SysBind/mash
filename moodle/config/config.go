@@ -1,4 +1,4 @@
-// moodle/config
+// moodle/config/config.go
 package config
 
 import (
@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/sysbind/moodle-automated-course-backup/moodle/database"
 )
 
 // Config struct holds information from moodle's config.php
@@ -15,6 +17,7 @@ type Config struct {
 	dbname string
 	dbuser string
 	dbpass string
+	db     database.Database
 }
 
 // String representation of Config struct
@@ -100,4 +103,8 @@ func cleanValue(value string) (retval string) {
 	retval = strings.Split(value, ";")[0]
 	retval = strings.Trim(retval, "'")
 	return
+}
+
+func (cfg *Config) SetDatabase(db database.Database) {
+	cfg.db = db
 }

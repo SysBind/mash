@@ -4,10 +4,10 @@ unset($CFG);
 global $CFG;
 $CFG = new stdClass();
 
-$CFG->dbtype    = 'mariadb';  // comment
+$CFG->dbtype    = 'mariadb';
 $CFG->dblibrary = 'native';
 $CFG->dbhost    = 'localhost';
-$CFG->dbname    = 'moodle';
+$CFG->dbname    = 'moe';
 $CFG->dbuser    = 'root';
 $CFG->dbpass    = 'q1w2e3r4';
 $CFG->prefix    = 'mdl_';
@@ -18,8 +18,9 @@ $CFG->dboptions = array (
 );
 
 $CFG->wwwroot   = 'http://localhost:8000';
-$CFG->dataroot  = '/var/tmp/moodledata';
+$CFG->dataroot  = '/home/asaf/src/moodledata';
 $CFG->admin     = 'admin';
+$CFG->dirroot   = '/home/asaf/src/moodle-alt';
 
 $CFG->directorypermissions = 0777;
 

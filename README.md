@@ -15,3 +15,4 @@ This will serve as a POC for the moodle/ go package
 
 Replace the moodle/testdata/config.php with config.php with clean installed moodle,
 This config.php need to contain $CFG->dirroot pointing to moodle's code
+(However, don't commit this file back..)

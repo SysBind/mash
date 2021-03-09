@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 
 	"github.com/sysbind/moodle-automated-course-backup/moodle/config"
+	"github.com/sysbind/moodle-automated-course-backup/moodle/course/backup"
 	"github.com/sysbind/moodle-automated-course-backup/moodle/database"
 )
 
@@ -21,17 +21,15 @@ func main() {
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
 
-	db := database.Open(cfg.DriverName(), cfg.DSN(), ctx)
+	db := database.Open(ctx, cfg.DriverName(), cfg.DSN())
 	defer db.Close()
 
-	autoBackupSettings := config.GetAutoBackupSettings(db)
+	cfg.SetDatabase(db)
 
-	if !autoBackupSettings.Active {
-		fmt.Println("Automated Course Backups not enabled")
-		return
+	err = backup.PreFlight(cfg)
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	fmt.Println(autoBackupSettings)
 
 	appSignal := make(chan os.Signal, 3)
 	signal.Notify(appSignal, os.Interrupt)
@@ -42,6 +40,4 @@ func main() {
 			stop()
 		}
 	}()
-
-	config.GetAutoBackupSettings(db)
 }

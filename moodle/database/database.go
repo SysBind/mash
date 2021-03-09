@@ -15,7 +15,7 @@ type Database struct {
 	ctx  context.Context
 }
 
-func Open(DriverName string, DSN string, ctx context.Context) (db Database) {
+func Open(ctx context.Context, DriverName string, DSN string) (db Database) {
 	var err error
 	db.ctx = ctx
 	db.pool, err = sql.Open(DriverName, DSN)
@@ -50,4 +50,8 @@ func (db *Database) Ping() {
 
 func (db *Database) Query(query string) (*sql.Rows, error) {
 	return db.pool.QueryContext(db.ctx, query)
+}
+
+func (db *Database) QueryRow(query string) *sql.Row {
+	return db.pool.QueryRowContext(db.ctx, query)
 }
