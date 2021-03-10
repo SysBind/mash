@@ -44,14 +44,13 @@ func Run(cfg config.Config) (err error) {
 			}
 			log.Fatalf("cmd.Run() failed with %v\n", err)
 		}
-		fmt.Printf("combined out:\n%s\n", string(out))
 	}
 
 	return
 }
 
 func getCourses(cfg config.Config) (ids []int, err error) {
-	query := fmt.Sprintf("SELECT id FROM mdl_course WHERE id>1 ORDER BY id DESC")
+	query := fmt.Sprintf("SELECT id FROM mdl_course ORDER BY id DESC")
 	var db database.Database = cfg.DB()
 
 	rows, err := db.Query(query)
