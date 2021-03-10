@@ -21,7 +21,10 @@ func main() {
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
 
-	db := database.Open(ctx, cfg.DriverName(), cfg.DSN())
+	db, err := database.Open(ctx, cfg.DriverName(), cfg.DSN())
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer db.Close()
 
 	cfg.SetDatabase(db)

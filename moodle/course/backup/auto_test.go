@@ -15,14 +15,16 @@ func TestPreFlight(t *testing.T) {
 	is := is.New(t)
 
 	cfg, err := config.Parse("../../testdata/config.php")
-	db := database.Open(context.Background(), cfg.DriverName(), cfg.DSN())
+	db, err := database.Open(context.Background(), cfg.DriverName(), cfg.DSN())
+
+	is.NoErr(err)
 	cfg.SetDatabase(db)
 
 	cfg.SetPluginConf("backup", "backup_auto_active", "0")
 
 	err = PreFlight(cfg)
 
-	is.True(err != nil) // PreFlight fail when backup_auto_active is 0
+	is.True(err != nil) // PreFlight should fail when backup_auto_active is 0
 
 	return
 }

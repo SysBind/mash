@@ -4,7 +4,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -15,20 +14,19 @@ type Database struct {
 	ctx  context.Context
 }
 
-func Open(ctx context.Context, DriverName string, DSN string) (db Database) {
-	var err error
+func Open(ctx context.Context, DriverName string, DSN string) (db Database, err error) {
 	db.ctx = ctx
 	db.pool, err = sql.Open(DriverName, DSN)
 	if err != nil {
 		// This will not be a connection error, but a DSN parse error or
 		// another initialization error.
-		log.Fatal("unable to use data source name", err)
+		return
 	}
 
 	db.pool.SetMaxIdleConns(3)
 	db.pool.SetMaxOpenConns(3)
 
-	db.Ping()
+	err = db.Ping()
 
 	return
 }
@@ -39,13 +37,13 @@ func (db *Database) Close() {
 
 // Ping the database to verify DSN provided by the user is valid and the
 // server accessible. If the ping fails exit the program with an error.
-func (db *Database) Ping() {
+func (db *Database) Ping() (err error) {
 	ctx, cancel := context.WithTimeout(db.ctx, 1*time.Second)
 	defer cancel()
 
-	if err := db.pool.PingContext(ctx); err != nil {
-		log.Fatalf("unable to connect to database: %v", err)
-	}
+	err = db.pool.PingContext(ctx)
+
+	return
 }
 
 func (db *Database) Query(query string) (*sql.Rows, error) {
@@ -54,4 +52,8 @@ func (db *Database) Query(query string) (*sql.Rows, error) {
 
 func (db *Database) QueryRow(query string) *sql.Row {
 	return db.pool.QueryRowContext(db.ctx, query)
+}
+
+func (db *Database) Exec(query string) (sql.Result, error) {
+	return db.pool.ExecContext(db.ctx, query)
 }
