@@ -54,6 +54,10 @@ func (cfg Config) DriverName() string {
 	return "unknown"
 }
 
+func (cfg Config) DB() database.Database {
+	return cfg.db
+}
+
 func (cfg *Config) assignFieldValue(field, value string) {
 	switch field {
 	case "dbtype":

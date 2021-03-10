@@ -28,8 +28,6 @@ func (cfg Config) SetPluginConf(plugin, name, value string) {
 
 	query := fmt.Sprintf("UPDATE mdl_config_plugins SET value='%s' WHERE plugin='%s' AND name='%s'", value, plugin, name)
 
-	fmt.Printf("Executing %s\n", query)
-
 	result, err := cfg.db.Exec(query)
 	if err != nil {
 		log.Fatalf("SetPluginConf: %v (%s)", err, query)

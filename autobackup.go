@@ -12,6 +12,23 @@ import (
 )
 
 func main() {
+	cfg, db, stop := setup()
+	defer stop()
+	defer db.Close()
+
+	err := backup.PreFlight(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = backup.Run(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// setup parses config, check db connection and creates context
+func setup() (cfg config.Config, db database.Database, stop context.CancelFunc) {
 	cfg, err := config.Parse("config.php")
 
 	if err != nil {
@@ -19,21 +36,15 @@ func main() {
 	}
 
 	ctx, stop := context.WithCancel(context.Background())
-	defer stop()
 
-	db, err := database.Open(ctx, cfg.DriverName(), cfg.DSN())
+	db, err = database.Open(ctx, cfg.DriverName(), cfg.DSN())
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	cfg.SetDatabase(db)
 
-	err = backup.PreFlight(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	// Catch OS interupt to cancel the context (stop())
 	appSignal := make(chan os.Signal, 3)
 	signal.Notify(appSignal, os.Interrupt)
 
@@ -43,4 +54,6 @@ func main() {
 			stop()
 		}
 	}()
+
+	return
 }
