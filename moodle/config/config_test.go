@@ -1,4 +1,4 @@
-// moodle/config
+// moodle/config/config_test.go
 package config
 
 import (

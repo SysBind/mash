@@ -20,9 +20,11 @@ func TestPreFlight(t *testing.T) {
 	is := is.New(t)
 
 	cfg, err := config.Parse("../../testdata/config.php")
-	db, err := database.Open(context.Background(), cfg.DriverName(), cfg.DSN())
+	is.NoErr(err) // parse config
 
-	is.NoErr(err)
+	db, err := database.Open(context.Background(), cfg.DriverName(), cfg.DSN())
+	is.NoErr(err) // open database
+
 	cfg.SetDatabase(db)
 
 	cfg.SetPluginConf("backup", "backup_auto_active", "0")
@@ -80,15 +82,7 @@ func TestRun(t *testing.T) {
 	is.NoErr(err) // Second Run should not return error
 
 	files, _ = ioutil.ReadDir(dest)
-	is.True(len(files) == 2) // Two backup file should exist after second Run
-
-	// run again (sleep 1 minute)
-	time.Sleep(time.Minute)
-	err = ab.Run()
-	is.NoErr(err) // Second Run should not return error
-
-	files, _ = ioutil.ReadDir(dest)
-	is.True(len(files) == 2) // Two backup file should exist after third Run (last one should have been deleted)
+	is.True(len(files) == 1) // One backup file should exist after second Run (last one should have been deleted)
 
 	return
 }

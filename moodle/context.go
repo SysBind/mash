@@ -2,6 +2,12 @@
 
 package moodle
 
+import (
+	"fmt"
+
+	"github.com/sysbind/mash/moodle/database"
+)
+
 type ContextLevel int
 
 const (
@@ -15,5 +21,14 @@ const (
 
 // Context contains info about primary object in module
 type Context struct {
-	level ContextLevel
+	id         int
+	level      ContextLevel
+	instanceid int
+}
+
+func CourseContext(db database.Database, cid int) (ctx Context, err error) {
+	query := fmt.Sprintf(`SELECT * FROM mdl_context WHERE contextlevel = %d AND
+		 instanceid = %d`, CONTEXT_COURSE, cid)
+	fmt.Printf("CourseContext: %s", query)
+	return
 }
