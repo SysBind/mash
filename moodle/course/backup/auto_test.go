@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/matryer/is"
-	"github.com/sysbind/moodle-automated-course-backup/moodle/config"
-	"github.com/sysbind/moodle-automated-course-backup/moodle/database"
+	"github.com/sysbind/mash/moodle/config"
+	"github.com/sysbind/mash/moodle/database"
 )
 
 func TestPreFlight(t *testing.T) {

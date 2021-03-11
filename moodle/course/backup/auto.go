@@ -9,8 +9,8 @@ import (
 	"os/exec"
 	"strconv"
 
-	"github.com/sysbind/moodle-automated-course-backup/moodle/config"
-	"github.com/sysbind/moodle-automated-course-backup/moodle/database"
+	"github.com/sysbind/mash/moodle/config"
+	"github.com/sysbind/mash/moodle/database"
 )
 
 type Storage int

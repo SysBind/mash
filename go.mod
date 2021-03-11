@@ -1,4 +1,4 @@
-module github.com/sysbind/moodle-automated-course-backup
+module github.com/sysbind/mash
 
 go 1.15
 

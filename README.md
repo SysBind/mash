@@ -1,4 +1,8 @@
-# Improved Moodle Automated Course Backup
+## Mash - Alternative Moodle Shell Written in GO
+
+## Improved Moodle Automated Course Backup
+
+```mash autobackup```
 
 Drop-in replacement for Moodle's ./admin/cli/automated_backups.php or Moodle's regular cron running automated backups.
 

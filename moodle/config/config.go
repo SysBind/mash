@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sysbind/moodle-automated-course-backup/moodle/database"
+	"github.com/sysbind/mash/moodle/database"
 )
 
 // Config struct holds information from moodle's config.php

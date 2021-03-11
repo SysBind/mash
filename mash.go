@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/sysbind/moodle-automated-course-backup/moodle/config"
-	"github.com/sysbind/moodle-automated-course-backup/moodle/course/backup"
-	"github.com/sysbind/moodle-automated-course-backup/moodle/database"
+	"github.com/sysbind/mash/moodle/config"
+	"github.com/sysbind/mash/moodle/course/backup"
+	"github.com/sysbind/mash/moodle/database"
 )
 
 func main() {
@@ -16,12 +16,17 @@ func main() {
 	defer stop()
 	defer db.Close()
 
-	err := backup.PreFlight(cfg)
+	ab, err := backup.LoadAutoBackup(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = backup.Run(cfg)
+	err = ab.PreFlight()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ab.Run()
 	if err != nil {
 		log.Fatal(err)
 	}

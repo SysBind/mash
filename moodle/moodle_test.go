@@ -1,5 +1,5 @@
 // moodle/moodle_test.go
-package config
+package moodle
 
 import (
 	"os"
