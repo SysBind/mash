@@ -22,6 +22,7 @@ func TestCourseContext(t *testing.T) {
 	cfg.SetDatabase(db)
 
 	ctx, err := CourseContext(db, 1)
+
 	is.NoErr(err)                // get course context without error
 	is.True(ctx.instanceid == 1) // get context with instancid we asked for
 }

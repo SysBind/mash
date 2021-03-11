@@ -24,11 +24,27 @@ type Context struct {
 	id         int
 	level      ContextLevel
 	instanceid int
+	path       string
+	depth      int
+	locked     int
 }
 
 func CourseContext(db database.Database, cid int) (ctx Context, err error) {
 	query := fmt.Sprintf(`SELECT * FROM mdl_context WHERE contextlevel = %d AND
 		 instanceid = %d`, CONTEXT_COURSE, cid)
 	fmt.Printf("CourseContext: %s", query)
+
+	err = db.QueryRow(query).Scan(&ctx.id,
+		&ctx.level,
+		&ctx.instanceid,
+		&ctx.path,
+		&ctx.depth,
+		&ctx.locked,
+	)
 	return
+}
+
+func (ctx Context) String() string {
+	return fmt.Sprintf("id: %d \n level: %d, instanceid: %d",
+		ctx.id, ctx.level, ctx.instanceid)
 }
