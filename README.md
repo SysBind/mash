@@ -20,3 +20,7 @@ Than symlink to moodle/testdata/config.php,
 This config.php need to contain $CFG->dirroot pointing to moodle's code
 
 Than ```go test ./...```
+
+Some tests will need to create multiple backups,
+So it will sleep 1 minute between backups
+(Backups are timestamped to minute, so if we dont sleep it will override each-other)

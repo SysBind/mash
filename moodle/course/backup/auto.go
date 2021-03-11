@@ -123,6 +123,26 @@ func (ab AutoBackup) backupCourse(id int) (err error) {
 // removeExcessBackups deletes old backups according to auto backup settings
 // logic copied from backup/util/helper/backup_cron_helper.class.php::remove_excess_backups
 func (ab AutoBackup) removeExcessBackups(id int) (err error) {
+	if ab.maxkept == 0 {
+		return
+	}
 
+	if ab.storage == STORAGE_COURSE || ab.storage == STORAGE_COURSE_AND_DIRECTORY {
+		err = ab.removeExcessBackupsFromCourse(id)
+	}
+
+	if ab.storage == STORAGE_DIRECTORY || ab.storage == STORAGE_COURSE_AND_DIRECTORY {
+		err = ab.removeExcessBackupsFromDir(id)
+	}
+	return
+}
+
+// removeExcessBackupsFromCourse removes old backups from course stroage area
+func (ab AutoBackup) removeExcessBackupsFromCourse(id int) (err error) {
+	return
+}
+
+// removeExcessBackupsFromDir removes old backups from backup dir
+func (ab AutoBackup) removeExcessBackupsFromDir(id int) (err error) {
 	return
 }
