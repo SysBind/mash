@@ -8,6 +8,7 @@ import (
 	"log"
 	"os/exec"
 	"strconv"
+	"syscall"
 
 	"github.com/sysbind/mash/moodle/config"
 	"github.com/sysbind/mash/moodle/database"
@@ -63,11 +64,14 @@ func (ab AutoBackup) Run() (err error) {
 	var ids []int
 
 	if ids, err = ab.getCourses(); err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	for i := range ids {
-		ab.backupCourse(ids[i])
+		err = ab.backupCourse(ids[i])
+		if err != nil {
+			return
+		}
 	}
 
 	return
@@ -104,13 +108,30 @@ func (ab AutoBackup) backupCourse(id int) (err error) {
 	fmt.Printf("backing up %d \n", id)
 
 	cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.Itoa(id))
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if out != nil {
-			fmt.Printf("combined out:\n%s\n", string(out))
+
+	if err = cmd.Start(); err != nil {
+		return
+	}
+
+	if err = cmd.Wait(); err != nil {
+		fmt.Printf("backup of %d failed !! \n", id)
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			// The program has exited with an exit code != 0
+			// This works on both Unix and Windows. Although package
+			// syscall is generally platform dependent, WaitStatus is
+			// defined for both Unix and Windows and in both cases has
+			// an ExitStatus() method with the same signature.
+			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+				log.Printf("Exit Status: %d", status.ExitStatus())
+			}
 		}
-		fmt.Printf("cmd.Run() failed with %v\n", err)
-		fmt.Printf("backup of %d failed ! \n", id)
+		// Only way to extract the actual stderr/stdout -
+		//   run it again with CombinedOutput
+		cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.Itoa(id))
+		out, _ := cmd.CombinedOutput()
+		log.Println(string(out))
+
+		return
 	}
 
 	fmt.Printf("backup of %d finished \n", id)

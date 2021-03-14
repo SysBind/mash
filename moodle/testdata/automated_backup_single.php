@@ -34,6 +34,10 @@ $course =  $DB->get_record('course', ['id' => $argv[1]], '*', MUST_EXIST);
 
 mtrace("backing up " . $course->id);
 
-backup_cron_automated_helper::launch_automated_backup($course, time(), 2);
+$retval = backup_cron_automated_helper::launch_automated_backup($course, time(), 2);
 
-exit(0);
+if ($retval == backup_cron_automated_helper::BACKUP_STATUS_OK) {
+    exit(0);
+}
+         
+exit(2);

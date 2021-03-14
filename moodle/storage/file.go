@@ -3,7 +3,12 @@
 package storage
 
 // StoredFile represents file store under moodledata
-type StoredFile struct {
-	id       int
-	filename string
+type storedFile struct {
+	id          int
+	filename    string
+	contenthash string
+	contextid   int
+	comonent    string
 }
+
+// func StoredFile(
