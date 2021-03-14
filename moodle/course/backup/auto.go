@@ -10,8 +10,10 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/sysbind/mash/moodle"
 	"github.com/sysbind/mash/moodle/config"
 	"github.com/sysbind/mash/moodle/database"
+	"github.com/sysbind/mash/moodle/storage"
 )
 
 type Storage int
@@ -136,7 +138,7 @@ func (ab AutoBackup) backupCourse(id int) (err error) {
 
 	fmt.Printf("backup of %d finished \n", id)
 
-	ab.removeExcessBackups(id)
+	err = ab.removeExcessBackups(id)
 
 	return
 }
@@ -149,7 +151,9 @@ func (ab AutoBackup) removeExcessBackups(id int) (err error) {
 	}
 
 	if ab.storage == STORAGE_COURSE || ab.storage == STORAGE_COURSE_AND_DIRECTORY {
-		err = ab.removeExcessBackupsFromCourse(id)
+		if err = ab.removeExcessBackupsFromCourse(id); err != nil {
+			return
+		}
 	}
 
 	if ab.storage == STORAGE_DIRECTORY || ab.storage == STORAGE_COURSE_AND_DIRECTORY {
@@ -160,6 +164,55 @@ func (ab AutoBackup) removeExcessBackups(id int) (err error) {
 
 // removeExcessBackupsFromCourse removes old backups from course stroage area
 func (ab AutoBackup) removeExcessBackupsFromCourse(id int) (err error) {
+	var files []storage.StoredFile
+
+	if files, err = ab.getAutoBackupsFromCourse(id); err != nil {
+		return
+	}
+
+	log.Println("removeExcessBackupsFromCourse: Iterating Files")
+	for _, file := range files {
+		if err = file.Delete(ab.cfg); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (ab AutoBackup) getAutoBackupsFromCourse(id int) (files []storage.StoredFile, err error) {
+	var db database.Database = ab.cfg.DB()
+	var cctx moodle.Context
+
+	cctx, err = moodle.CourseContext(db, id)
+	if err != nil {
+		return
+	}
+
+	query := fmt.Sprintf("SELECT id, filename, contenthash, contextid, component, filearea, timecreated FROM mdl_files WHERE contextid=%d AND component='%s' AND filearea='%s' ORDER BY timecreated DESC", cctx.Id, "backup", "automated")
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var file storage.StoredFile
+		if err = rows.Scan(&file.Id,
+			&file.FileName,
+			&file.ContentHash,
+			&file.ContextId,
+			&file.Component,
+			&file.FileArea,
+			&file.TimeCreated); err != nil {
+			return
+		}
+		files = append(files, file)
+	}
+	// Check for errors from iterating over rows.
+	err = rows.Err()
+
 	return
 }
 

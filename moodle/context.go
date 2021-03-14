@@ -21,30 +21,29 @@ const (
 
 // Context contains info about primary object in module
 type Context struct {
-	id         int
-	level      ContextLevel
-	instanceid int
-	path       string
-	depth      int
-	locked     int
+	Id         int
+	Level      ContextLevel
+	InstanceId int
+	Path       string
+	Depth      int
+	Locked     int
 }
 
 func CourseContext(db database.Database, cid int) (ctx Context, err error) {
 	query := fmt.Sprintf(`SELECT * FROM mdl_context WHERE contextlevel = %d AND
 		 instanceid = %d`, CONTEXT_COURSE, cid)
-	fmt.Printf("CourseContext: %s", query)
 
-	err = db.QueryRow(query).Scan(&ctx.id,
-		&ctx.level,
-		&ctx.instanceid,
-		&ctx.path,
-		&ctx.depth,
-		&ctx.locked,
+	err = db.QueryRow(query).Scan(&ctx.Id,
+		&ctx.Level,
+		&ctx.InstanceId,
+		&ctx.Path,
+		&ctx.Depth,
+		&ctx.Locked,
 	)
 	return
 }
 
 func (ctx Context) String() string {
 	return fmt.Sprintf("id: %d \n level: %d, instanceid: %d",
-		ctx.id, ctx.level, ctx.instanceid)
+		ctx.Id, ctx.Level, ctx.InstanceId)
 }
