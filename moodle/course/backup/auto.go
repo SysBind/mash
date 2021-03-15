@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/sysbind/mash/moodle"
 	"github.com/sysbind/mash/moodle/config"
 	"github.com/sysbind/mash/moodle/database"
@@ -73,14 +75,38 @@ func (ab AutoBackup) Run() (err error) {
 		return
 	}
 
-	for i := range ids {
-		err = ab.backupCourse(ids[i])
-		if err != nil {
-			return
-		}
+	uiprogress.Start()
+	courses := make(chan int, len(ids))
+	results := make(chan int, len(ids))
+
+	// create workers
+	for w := 1; w <= 3; w++ {
+		go ab.worker(w, courses, results)
+	}
+
+	// feed courses into channel
+	for _, course := range ids {
+		courses <- course
+	}
+	close(courses)
+
+	for a := 1; a <= len(ids); a++ {
+		<-results
 	}
 
 	return
+}
+
+func (ab AutoBackup) worker(id int, courses <-chan int, results chan<- int) {
+	for cid := range courses {
+		err := ab.backupCourse(cid)
+		if err != nil {
+			log.Println("error on course", cid, err)
+			results <- 2
+			continue
+		}
+		results <- 0
+	}
 }
 
 // getCourses returns course ids to backup
@@ -111,8 +137,10 @@ func (ab AutoBackup) getCourses() (ids []int, err error) {
 
 // backupCourse creates single course backup.
 func (ab AutoBackup) backupCourse(id int) (err error) {
-	fmt.Printf("backing up %d \n", id)
-
+	bar := uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
+	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		return strutil.Resize(fmt.Sprintf("Course %d", id), 22)
+	})
 	cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.Itoa(id))
 
 	if err = cmd.Start(); err != nil {
@@ -140,8 +168,8 @@ func (ab AutoBackup) backupCourse(id int) (err error) {
 		return
 	}
 
-	fmt.Printf("backup of %d finished \n", id)
-
+	for bar.Incr() { // TODO: Implement actual progress
+	}
 	err = ab.removeExcessBackups(id)
 
 	return
