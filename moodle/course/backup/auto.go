@@ -141,6 +141,8 @@ func (ab AutoBackup) backupCourse(id int) (err error) {
 	bar.PrependFunc(func(b *uiprogress.Bar) string {
 		return strutil.Resize(fmt.Sprintf("Course %d", id), 22)
 	})
+
+	bar.Incr()
 	cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.Itoa(id))
 
 	if err = cmd.Start(); err != nil {
@@ -168,9 +170,9 @@ func (ab AutoBackup) backupCourse(id int) (err error) {
 		return
 	}
 
+	err = ab.removeExcessBackups(id)
 	for bar.Incr() { // TODO: Implement actual progress
 	}
-	err = ab.removeExcessBackups(id)
 
 	return
 }
