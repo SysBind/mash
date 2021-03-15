@@ -76,6 +76,7 @@ func (ab AutoBackup) Run() (err error) {
 	}
 
 	uiprogress.Start()
+	defer uiprogress.Stop()
 	courses := make(chan int, len(ids))
 	results := make(chan int, len(ids))
 
@@ -93,6 +94,8 @@ func (ab AutoBackup) Run() (err error) {
 	for a := 1; a <= len(ids); a++ {
 		<-results
 	}
+
+	log.Println("Auto Backup Done")
 
 	return
 }
