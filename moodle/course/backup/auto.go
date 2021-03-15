@@ -174,6 +174,10 @@ func (ab AutoBackup) removeExcessBackupsFromCourse(id int) (err error) {
 		return
 	}
 
+	if len(files) <= ab.maxkept {
+		return // nothing to delete
+	}
+
 	// drop last maxkept elements
 	files = files[:len(files)-ab.maxkept]
 
@@ -198,12 +202,15 @@ func (ab AutoBackup) removeExcessBackupsFromDir(id int) (err error) {
 		return
 	}
 
+	if len(files) <= ab.maxkept {
+		return // nothing to delete
+	}
+
 	// drop last maxkept elements
 	files = files[:len(files)-ab.maxkept]
 
 	for _, file := range files {
 		err = os.Remove(file)
-		fmt.Println("removeExcessBackupsFromDir", file)
 	}
 	return
 }
