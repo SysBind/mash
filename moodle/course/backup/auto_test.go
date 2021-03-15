@@ -50,11 +50,11 @@ func TestRun(t *testing.T) {
 	cfg.SetDatabase(db)
 
 	dest, err := createTempBackupDir()
-	fmt.Printf("Created Temp Backup Dir %s", dest)
 	is.NoErr(err)
 	defer removeTempBackupDir(dest)
 
 	cfg.SetPluginConf("backup", "backup_auto_active", "1")
+	cfg.SetPluginConf("backup", "backup_auto_max_kept", "1")
 	cfg.SetPluginConf("backup", "backup_auto_destination", dest)
 	cfg.SetPluginConf("backup", "backup_auto_storage",
 		fmt.Sprintf("%d", STORAGE_COURSE_AND_DIRECTORY))
@@ -77,6 +77,7 @@ func TestRun(t *testing.T) {
 	is.True(len(files) == 1) // One backup file should have been created
 
 	// run again (sleep 1 minute)
+	fmt.Println("Sleep 1 minute before second backup")
 	time.Sleep(time.Minute)
 	err = ab.Run()
 	is.NoErr(err) // Second Run should not return error
