@@ -4,7 +4,7 @@ package storage
 
 import (
 	"fmt"
-	"log"
+	"os"
 
 	"github.com/sysbind/mash/moodle/config"
 	"github.com/sysbind/mash/moodle/database"
@@ -28,13 +28,16 @@ func (file StoredFile) String() string {
 
 func (file StoredFile) Delete(cfg config.Config) (err error) {
 	var canDelete bool
-	var db database.Database = ab.cfg.DB()
+	var db database.Database = cfg.DB()
 
 	if canDelete, err = file.canDelete(db); err != nil || !canDelete {
 		return
 	}
-	log.Println("Deleting File:", file)
 
+	err = os.Remove(file.datarootPath(cfg))
+	if err != nil {
+		return
+	}
 	db.DeleteRecord("files", file.Id)
 	return
 }
@@ -42,9 +45,9 @@ func (file StoredFile) Delete(cfg config.Config) (err error) {
 func (file StoredFile) canDelete(db database.Database) (bool, error) {
 	var count int
 
-	query := fmt.Sprintf("SELECT COUNT(id) FROM mdl_files WHERE contenthash='%s' WHERE id != %d",
+	query := fmt.Sprintf("SELECT COUNT(id) FROM mdl_files WHERE contenthash='%s' AND NOT id = %d",
 		file.ContentHash,
-		file.id)
+		file.Id)
 
 	err := db.QueryRow(query).Scan(&count)
 
@@ -52,4 +55,13 @@ func (file StoredFile) canDelete(db database.Database) (bool, error) {
 		return false, err
 	}
 	return count == 0, nil
+}
+
+func (file StoredFile) datarootPath(cfg config.Config) (path string) {
+	path = fmt.Sprintf("%s/filedir/%s/%s/%s",
+		cfg.DataRoot(),
+		file.ContentHash[0:2],
+		file.ContentHash[2:4],
+		file.ContentHash)
+	return
 }

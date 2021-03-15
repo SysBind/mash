@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"syscall"
 
@@ -28,6 +30,7 @@ type AutoBackup struct {
 	active  bool
 	maxkept int
 	storage Storage
+	dest    string // dest if storage is *_DIRECTORY
 	cfg     config.Config
 }
 
@@ -50,6 +53,7 @@ func LoadAutoBackup(cfg config.Config) (ab AutoBackup, err error) {
 		return
 	}
 	ab.storage = Storage(intVal)
+	ab.dest = cfg.GetPluginConf("backup", "backup_auto_destination")
 	return
 }
 
@@ -170,13 +174,37 @@ func (ab AutoBackup) removeExcessBackupsFromCourse(id int) (err error) {
 		return
 	}
 
-	log.Println("removeExcessBackupsFromCourse: Iterating Files")
+	// drop last maxkept elements
+	files = files[:len(files)-ab.maxkept]
+
 	for _, file := range files {
 		if err = file.Delete(ab.cfg); err != nil {
 			return
 		}
 	}
 
+	return
+}
+
+// removeExcessBackupsFromDir removes old backups from backup dir
+func (ab AutoBackup) removeExcessBackupsFromDir(id int) (err error) {
+	glob := fmt.Sprintf("%s/backup-moodle2-course-%d-*.mbz",
+		ab.dest,
+		id)
+	var files []string
+	files, err = filepath.Glob(glob)
+
+	if err != nil {
+		return
+	}
+
+	// drop last maxkept elements
+	files = files[:len(files)-ab.maxkept]
+
+	for _, file := range files {
+		err = os.Remove(file)
+		fmt.Println("removeExcessBackupsFromDir", file)
+	}
 	return
 }
 
@@ -189,7 +217,7 @@ func (ab AutoBackup) getAutoBackupsFromCourse(id int) (files []storage.StoredFil
 		return
 	}
 
-	query := fmt.Sprintf("SELECT id, filename, contenthash, contextid, component, filearea, timecreated FROM mdl_files WHERE contextid=%d AND component='%s' AND filearea='%s' ORDER BY timecreated DESC", cctx.Id, "backup", "automated")
+	query := fmt.Sprintf("SELECT id, filename, contenthash, contextid, component, filearea, timecreated FROM mdl_files WHERE contextid=%d AND component='%s' AND filearea='%s' AND NOT filename = '.' ORDER BY timecreated ASC", cctx.Id, "backup", "automated")
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -213,10 +241,5 @@ func (ab AutoBackup) getAutoBackupsFromCourse(id int) (files []storage.StoredFil
 	// Check for errors from iterating over rows.
 	err = rows.Err()
 
-	return
-}
-
-// removeExcessBackupsFromDir removes old backups from backup dir
-func (ab AutoBackup) removeExcessBackupsFromDir(id int) (err error) {
 	return
 }

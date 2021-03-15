@@ -12,13 +12,14 @@ import (
 
 // Config struct holds information from moodle's config.php
 type Config struct {
-	dbtype  string
-	dbhost  string
-	dbname  string
-	dbuser  string
-	dbpass  string
-	dirroot string
-	db      database.Database
+	dbtype   string
+	dbhost   string
+	dbname   string
+	dbuser   string
+	dbpass   string
+	dirroot  string
+	dataroot string
+	db       database.Database
 }
 
 // String representation of Config struct
@@ -55,10 +56,6 @@ func (cfg Config) DriverName() string {
 	return "unknown"
 }
 
-func (cfg Config) DB() database.Database {
-	return cfg.db
-}
-
 func (cfg *Config) assignFieldValue(field, value string) {
 	switch field {
 	case "dbtype":
@@ -73,6 +70,8 @@ func (cfg *Config) assignFieldValue(field, value string) {
 		cfg.dbpass = value
 	case "dirroot":
 		cfg.dirroot = value
+	case "dataroot":
+		cfg.dataroot = value
 	}
 }
 
@@ -114,6 +113,14 @@ func cleanValue(value string) (retval string) {
 
 func (cfg *Config) SetDatabase(db database.Database) {
 	cfg.db = db
+}
+
+func (cfg Config) DB() database.Database {
+	return cfg.db
+}
+
+func (cfg Config) DataRoot() string {
+	return cfg.dataroot
 }
 
 // currently for unit testing only
