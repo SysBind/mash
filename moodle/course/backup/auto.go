@@ -273,7 +273,7 @@ func LoadAutoBackup(cfg config.Config) (ab AutoBackup, err error) {
 	ab.storage = Storage(intVal)
 	ab.dest = cfg.GetPluginConf("backup", "backup_auto_destination")
 
-	intVal, err := strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_skip_modif_prev"))
+	intVal, err = strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_skip_modif_prev"))
 	if err != nil {
 		return
 	}
