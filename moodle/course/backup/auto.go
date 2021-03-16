@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/gosuri/uiprogress"
-	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/sysbind/mash/moodle"
 	"github.com/sysbind/mash/moodle/config"
 	"github.com/sysbind/mash/moodle/database"
@@ -29,34 +27,12 @@ const (
 )
 
 type AutoBackup struct {
-	active  bool
-	maxkept int
-	storage Storage
-	dest    string // dest if storage is *_DIRECTORY
-	cfg     config.Config
-}
-
-func LoadAutoBackup(cfg config.Config) (ab AutoBackup, err error) {
-	ab.cfg = cfg
-
-	intVal, err := strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_active"))
-	if err != nil {
-		return
-	}
-	ab.active = intVal > 0
-
-	ab.maxkept, err = strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_max_kept"))
-	if err != nil {
-		return
-	}
-
-	intVal, err = strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_storage"))
-	if err != nil {
-		return
-	}
-	ab.storage = Storage(intVal)
-	ab.dest = cfg.GetPluginConf("backup", "backup_auto_destination")
-	return
+	active        bool
+	maxkept       int
+	storage       Storage
+	dest          string // dest if storage is *_DIRECTORY
+	skipmodifprev bool   // skip if not modified since last backup
+	cfg           config.Config
 }
 
 // PreFlight checks some basic settings to see if autobackup should run
@@ -75,8 +51,6 @@ func (ab AutoBackup) Run() (err error) {
 		return
 	}
 
-	uiprogress.Start()
-	defer uiprogress.Stop()
 	courses := make(chan int, len(ids))
 	results := make(chan int, len(ids))
 
@@ -91,6 +65,7 @@ func (ab AutoBackup) Run() (err error) {
 	}
 	close(courses)
 
+	// wait for all backups to complete
 	for a := 1; a <= len(ids); a++ {
 		<-results
 	}
@@ -140,12 +115,6 @@ func (ab AutoBackup) getCourses() (ids []int, err error) {
 
 // backupCourse creates single course backup.
 func (ab AutoBackup) backupCourse(id int) (err error) {
-	bar := uiprogress.AddBar(2).AppendCompleted().PrependElapsed()
-	bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return strutil.Resize(fmt.Sprintf("Course %d", id), 22)
-	})
-
-	bar.Incr()
 	cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.Itoa(id))
 
 	if err = cmd.Start(); err != nil {
@@ -174,8 +143,6 @@ func (ab AutoBackup) backupCourse(id int) (err error) {
 	}
 
 	err = ab.removeExcessBackups(id)
-	for bar.Incr() { // TODO: Implement actual progress
-	}
 
 	return
 }
@@ -280,6 +247,37 @@ func (ab AutoBackup) getAutoBackupsFromCourse(id int) (files []storage.StoredFil
 	}
 	// Check for errors from iterating over rows.
 	err = rows.Err()
+
+	return
+}
+
+// LoadAutoBackup Loads auto backup settings from database
+func LoadAutoBackup(cfg config.Config) (ab AutoBackup, err error) {
+	ab.cfg = cfg
+
+	intVal, err := strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_active"))
+	if err != nil {
+		return
+	}
+	ab.active = intVal > 0
+
+	ab.maxkept, err = strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_max_kept"))
+	if err != nil {
+		return
+	}
+
+	intVal, err = strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_storage"))
+	if err != nil {
+		return
+	}
+	ab.storage = Storage(intVal)
+	ab.dest = cfg.GetPluginConf("backup", "backup_auto_destination")
+
+	intVal, err := strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_skip_modif_prev"))
+	if err != nil {
+		return
+	}
+	ab.skipmodifprev = intVal > 0
 
 	return
 }
