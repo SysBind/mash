@@ -17,7 +17,13 @@ func Publish(topic Topic) (channel chan<- interface{}, err error) {
 	}
 
 	subs[topic] = []chan interface{}{} // empty subcribers slice
-	channel = make(chan interface{})
+	newchan := make(chan interface{})
+	pubs[topic] = newchan
+	channel = newchan
+
+	go func() {
+
+	}()
 
 	return
 }
@@ -36,11 +42,16 @@ func Close(topic Topic) (err error) {
 // Subscribe returns a read channel for the requested topic
 // Not concurrent safe
 func Subscribe(topic Topic) (channel <-chan interface{}, err error) {
-	if _, ok := subs[topic]; !ok {
+	var subscribers []chan interface{}
+	var ok bool
+	if subscribers, ok = subs[topic]; !ok {
 		err = fmt.Errorf("Subscribe: topic not published %s", topic)
 		return
 	}
 
-	channel = make(chan interface{})
+	newchan := make(chan interface{})
+	subscribers = append(subscribers, newchan)
+	subs[topic] = subscribers
+	channel = newchan
 	return
 }
