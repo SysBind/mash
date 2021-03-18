@@ -21,15 +21,15 @@ const (
 
 // Context contains info about primary object in module
 type Context struct {
-	Id         int
+	Id         uint64
 	Level      ContextLevel
-	InstanceId int
+	InstanceId uint64
 	Path       string
 	Depth      int
 	Locked     int
 }
 
-func CourseContext(db database.Database, cid int) (ctx Context, err error) {
+func CourseContext(db database.Database, cid uint64) (ctx Context, err error) {
 	query := fmt.Sprintf(`SELECT * FROM mdl_context WHERE contextlevel = %d AND
 		 instanceid = %d`, CONTEXT_COURSE, cid)
 

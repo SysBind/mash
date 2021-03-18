@@ -11,9 +11,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/sysbind/mash/moodle"
 	"github.com/sysbind/mash/moodle/config"
+	"github.com/sysbind/mash/moodle/course"
 	"github.com/sysbind/mash/moodle/database"
 	"github.com/sysbind/mash/moodle/storage"
 )
@@ -45,13 +47,13 @@ func (ab AutoBackup) PreFlight() (err error) {
 
 // Run starts the automated backup process
 func (ab AutoBackup) Run() (err error) {
-	var ids []int
+	var ids []uint64
 
 	if ids, err = ab.getCourses(); err != nil {
 		return
 	}
 
-	courses := make(chan int, len(ids))
+	courses := make(chan uint64, len(ids))
 	results := make(chan int, len(ids))
 
 	// create workers
@@ -75,7 +77,7 @@ func (ab AutoBackup) Run() (err error) {
 	return
 }
 
-func (ab AutoBackup) worker(id int, courses <-chan int, results chan<- int) {
+func (ab AutoBackup) worker(id int, courses <-chan uint64, results chan<- int) {
 	for cid := range courses {
 		err := ab.backupCourse(cid)
 		if err != nil {
@@ -88,7 +90,7 @@ func (ab AutoBackup) worker(id int, courses <-chan int, results chan<- int) {
 }
 
 // getCourses returns course ids to backup
-func (ab AutoBackup) getCourses() (ids []int, err error) {
+func (ab AutoBackup) getCourses() (ids []uint64, err error) {
 	query := fmt.Sprintf("SELECT id FROM mdl_course ORDER BY id DESC")
 	var db database.Database = ab.cfg.DB()
 
@@ -99,9 +101,9 @@ func (ab AutoBackup) getCourses() (ids []int, err error) {
 
 	defer rows.Close()
 
-	ids = make([]int, 0)
+	ids = make([]uint64, 0)
 	for rows.Next() {
-		var id int
+		var id uint64
 		if err := rows.Scan(&id); err != nil {
 			log.Fatal(err)
 		}
@@ -114,9 +116,28 @@ func (ab AutoBackup) getCourses() (ids []int, err error) {
 }
 
 // backupCourse creates single course backup.
-func (ab AutoBackup) backupCourse(id int) (err error) {
-	cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.Itoa(id))
+func (ab AutoBackup) backupCourse(id uint64) (err error) {
+	// mdl_backup_courses book keeping:
+	var db database.Database = ab.cfg.DB()
+	var backupRec CourseBackupRec
+	backupRec, err = getBackupRec(db, id)
+	if err != nil {
+		return
+	}
+	defer backupRec.updateRow(db)
 
+	// Skip unmodified since last backup?
+	if ab.skipmodifprev && !course.ModifiedSince(db, id, backupRec.EndTime) {
+		backupRec.Status = STATUS_SKIPPED
+		backupRec.Message.String = fmt.Sprintf("Not modified since last backup in %s", time.Unix(int64(backupRec.EndTime), 0))
+		return
+	}
+	backupRec.StartTime = uint64(time.Now().Unix())
+	backupRec.EndTime = 0
+	backupRec.Status = STATUS_UNFINISHED
+	backupRec.Message.String = "Backup Start"
+
+	cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.FormatUint(id, 10))
 	if err = cmd.Start(); err != nil {
 		return
 	}
@@ -125,31 +146,31 @@ func (ab AutoBackup) backupCourse(id int) (err error) {
 		fmt.Printf("backup of %d failed !! \n", id)
 		if exiterr, ok := err.(*exec.ExitError); ok {
 			// The program has exited with an exit code != 0
-			// This works on both Unix and Windows. Although package
-			// syscall is generally platform dependent, WaitStatus is
-			// defined for both Unix and Windows and in both cases has
-			// an ExitStatus() method with the same signature.
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
 				log.Printf("Exit Status: %d", status.ExitStatus())
 			}
 		}
 		// Only way to extract the actual stderr/stdout -
 		//   run it again with CombinedOutput
-		cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.Itoa(id))
+		cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.FormatUint(id, 10))
 		out, _ := cmd.CombinedOutput()
 		log.Println(string(out))
 
+		backupRec.Status = STATUS_ERROR
+		backupRec.Message.String = string(out)
+		backupRec.EndTime = uint64(time.Now().Unix())
 		return
 	}
-
 	err = ab.removeExcessBackups(id)
-
+	backupRec.EndTime = uint64(time.Now().Unix())
+	backupRec.Message.String = ""
+	backupRec.Status = STATUS_OK
 	return
 }
 
 // removeExcessBackups deletes old backups according to auto backup settings
 // logic copied from backup/util/helper/backup_cron_helper.class.php::remove_excess_backups
-func (ab AutoBackup) removeExcessBackups(id int) (err error) {
+func (ab AutoBackup) removeExcessBackups(id uint64) (err error) {
 	if ab.maxkept == 0 {
 		return
 	}
@@ -167,7 +188,7 @@ func (ab AutoBackup) removeExcessBackups(id int) (err error) {
 }
 
 // removeExcessBackupsFromCourse removes old backups from course stroage area
-func (ab AutoBackup) removeExcessBackupsFromCourse(id int) (err error) {
+func (ab AutoBackup) removeExcessBackupsFromCourse(id uint64) (err error) {
 	var files []storage.StoredFile
 
 	if files, err = ab.getAutoBackupsFromCourse(id); err != nil {
@@ -191,7 +212,7 @@ func (ab AutoBackup) removeExcessBackupsFromCourse(id int) (err error) {
 }
 
 // removeExcessBackupsFromDir removes old backups from backup dir
-func (ab AutoBackup) removeExcessBackupsFromDir(id int) (err error) {
+func (ab AutoBackup) removeExcessBackupsFromDir(id uint64) (err error) {
 	glob := fmt.Sprintf("%s/backup-moodle2-course-%d-*.mbz",
 		ab.dest,
 		id)
@@ -215,7 +236,7 @@ func (ab AutoBackup) removeExcessBackupsFromDir(id int) (err error) {
 	return
 }
 
-func (ab AutoBackup) getAutoBackupsFromCourse(id int) (files []storage.StoredFile, err error) {
+func (ab AutoBackup) getAutoBackupsFromCourse(id uint64) (files []storage.StoredFile, err error) {
 	var db database.Database = ab.cfg.DB()
 	var cctx moodle.Context
 

@@ -2,8 +2,16 @@
 
 package course
 
-import "time"
+import (
+	"fmt"
 
-func ModifiedSince(cid int, since time.Time) bool {
-	return true
+	"github.com/sysbind/mash/moodle/database"
+)
+
+func ModifiedSince(db database.Database, cid uint64, since uint64) bool {
+	query := fmt.Sprintf("SELECT COUNT(id) FROM mdl_logstore_standard_log WHERE courseid = %d AND timecreated > %d AND NOT crud = 'r' AND NOT target = 'course_backup'", cid, since)
+	var count int
+	_ = db.QueryRow(query).Scan(&count)
+
+	return (count > 0)
 }
