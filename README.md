@@ -1,4 +1,4 @@
-## Mash - Alternative Moodle Shell Written in GO
+## Mash - Alternative Moodle Shell Written in Go
 
 ## Improved Moodle Automated Course Backup
 
