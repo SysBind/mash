@@ -5,11 +5,12 @@ package backup
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/sysbind/mash/moodle/database"
 )
 
-type Status int // Backup Status
+type Status uint // Backup Status
 
 const (
 	STATUS_OK         Status = 1 // Course automated backup completed successfully
@@ -20,16 +21,34 @@ const (
 	STATUS_NOTYETRUN  Status = 5 // Course automated backup has yet to be run
 )
 
-type CourseBackup struct {
-	Id        int64
-	CourseId  int64
-	StartTime int
-	EndTime   int
-	Status    int
+// CourseBackupRec stores state of single course backup run (mdl_backup_courses)
+type CourseBackupRec struct {
+	Id        uint64
+	CourseId  uint64
+	StartTime uint64
+	EndTime   uint64
+	Status    Status
 	Message   string
 }
 
-func GetBackup(db database.Database, cid int64) (cb CourseBackup, err error) {
+// StartBackupRec records start time of backup and returns CourseBackupRec
+//                for further updates
+func startBackupRec(db database.Database, cid uint64) (cb CourseBackupRec, err error) {
+	cb, err = getBackupRec(db, cid)
+	if err != nil {
+		return
+	}
+	cb.StartTime = uint64(time.Now().Unix())
+	cb.EndTime = 0
+	cb.Status = STATUS_UNFINISHED
+	cb.updateRow(db)
+
+	return
+}
+
+// getBackupRec gets record of course backup from mdl_backup_courses
+//              will create the record if not exist yet
+func getBackupRec(db database.Database, cid uint64) (cb CourseBackupRec, err error) {
 	cb.CourseId = cid
 	query := fmt.Sprintf("SELECT id,laststarttime,lastendtime,laststatus,message FROM mdl_backup_courses WHERE courseid=%d", cid)
 
@@ -49,7 +68,7 @@ func GetBackup(db database.Database, cid int64) (cb CourseBackup, err error) {
 	return
 }
 
-func (cb *CourseBackup) insertRow(db database.Database) (err error) {
+func (cb *CourseBackupRec) insertRow(db database.Database) (err error) {
 	query := fmt.Sprintf("INSERT INTO mdl_backup_courses(courseid) VALUES(%d)", cb.CourseId)
 	var result sql.Result
 
@@ -69,12 +88,13 @@ func (cb *CourseBackup) insertRow(db database.Database) (err error) {
 		return
 	}
 
-	cb.Id, err = result.LastInsertId()
+	lastid, err := result.LastInsertId()
+	cb.Id = uint64(lastid)
 
 	return
 }
 
-func (cb *CourseBackup) updateRow(db database.Database) (err error) {
+func (cb *CourseBackupRec) updateRow(db database.Database) (err error) {
 	query := fmt.Sprintf("UPDATE mdl_backup_courses SET StartTime=%d, EndTime=%d, Status=%d, Message='%s' WHERE id=%d", cb.StartTime, cb.EndTime, cb.Status, cb.Message, cb.Id)
 
 	var result sql.Result
