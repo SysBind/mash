@@ -15,6 +15,7 @@ import (
 
 	"github.com/sysbind/mash/moodle"
 	"github.com/sysbind/mash/moodle/config"
+	"github.com/sysbind/mash/moodle/course"
 	"github.com/sysbind/mash/moodle/database"
 	"github.com/sysbind/mash/moodle/storage"
 )
@@ -119,11 +120,21 @@ func (ab AutoBackup) backupCourse(id uint64) (err error) {
 	// mdl_backup_courses book keeping:
 	var db database.Database = ab.cfg.DB()
 	var backupRec CourseBackupRec
-	backupRec, err = startBackupRec(db, id)
+	backupRec, err = getBackupRec(db, id)
 	if err != nil {
 		return
 	}
 	defer backupRec.updateRow(db)
+
+	// Skip unmodified since last backup?
+	if ab.skipmodifprev && !course.ModifiedSince(db, id, backupRec.EndTime) {
+		backupRec.Status = STATUS_SKIPPED
+		backupRec.Message.String = fmt.Sprintf("Not modified since last backup in %s", time.Unix(int64(backupRec.EndTime), 0))
+		return
+	}
+	backupRec.StartTime = uint64(time.Now().Unix())
+	backupRec.EndTime = 0
+	backupRec.Status = STATUS_UNFINISHED
 
 	cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.FormatUint(id, 10))
 	if err = cmd.Start(); err != nil {

@@ -100,8 +100,6 @@ func (cb *CourseBackupRec) updateRow(db database.Database) (err error) {
 		message = cb.Message.String
 	}
 	query := fmt.Sprintf("UPDATE mdl_backup_courses SET laststarttime=%d, lastendtime=%d, laststatus=%d, message='%s' WHERE id=%d", cb.StartTime, cb.EndTime, cb.Status, message, cb.Id)
-	fmt.Println("updateRow: ", query)
-
 	var result sql.Result
 	result, err = db.Exec(query)
 	if err != nil {
