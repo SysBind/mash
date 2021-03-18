@@ -145,7 +145,7 @@ func (ab AutoBackup) backupCourse(id uint64) (err error) {
 		log.Println(string(out))
 
 		backupRec.Status = STATUS_ERROR
-		backupRec.Message = string(out)
+		backupRec.Message.String = string(out)
 		backupRec.EndTime = uint64(time.Now().Unix())
 		return
 	}

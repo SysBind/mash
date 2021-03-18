@@ -28,7 +28,7 @@ type CourseBackupRec struct {
 	StartTime uint64
 	EndTime   uint64
 	Status    Status
-	Message   string
+	Message   sql.NullString
 }
 
 // StartBackupRec records start time of backup and returns CourseBackupRec
@@ -95,7 +95,11 @@ func (cb *CourseBackupRec) insertRow(db database.Database) (err error) {
 }
 
 func (cb *CourseBackupRec) updateRow(db database.Database) (err error) {
-	query := fmt.Sprintf("UPDATE mdl_backup_courses SET StartTime=%d, EndTime=%d, Status=%d, Message='%s' WHERE id=%d", cb.StartTime, cb.EndTime, cb.Status, cb.Message, cb.Id)
+	message := ""
+	if cb.Message.Valid {
+		message = cb.Message.String
+	}
+	query := fmt.Sprintf("UPDATE mdl_backup_courses SET StartTime=%d, EndTime=%d, Status=%d, Message='%s' WHERE id=%d", cb.StartTime, cb.EndTime, cb.Status, message, cb.Id)
 
 	var result sql.Result
 	result, err = db.Exec(query)
