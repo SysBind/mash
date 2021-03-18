@@ -135,6 +135,7 @@ func (ab AutoBackup) backupCourse(id uint64) (err error) {
 	backupRec.StartTime = uint64(time.Now().Unix())
 	backupRec.EndTime = 0
 	backupRec.Status = STATUS_UNFINISHED
+	backupRec.Message.String = "Backup Start"
 
 	cmd := exec.Command("php", "admin/cli/automated_backup_single.php", strconv.FormatUint(id, 10))
 	if err = cmd.Start(); err != nil {
@@ -162,6 +163,7 @@ func (ab AutoBackup) backupCourse(id uint64) (err error) {
 	}
 	err = ab.removeExcessBackups(id)
 	backupRec.EndTime = uint64(time.Now().Unix())
+	backupRec.Message.String = ""
 	backupRec.Status = STATUS_OK
 	return
 }
