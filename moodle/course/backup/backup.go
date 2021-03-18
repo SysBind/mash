@@ -41,7 +41,7 @@ func startBackupRec(db database.Database, cid uint64) (cb CourseBackupRec, err e
 	cb.StartTime = uint64(time.Now().Unix())
 	cb.EndTime = 0
 	cb.Status = STATUS_UNFINISHED
-	cb.updateRow(db)
+	err = cb.updateRow(db)
 
 	return
 }
@@ -99,7 +99,8 @@ func (cb *CourseBackupRec) updateRow(db database.Database) (err error) {
 	if cb.Message.Valid {
 		message = cb.Message.String
 	}
-	query := fmt.Sprintf("UPDATE mdl_backup_courses SET StartTime=%d, EndTime=%d, Status=%d, Message='%s' WHERE id=%d", cb.StartTime, cb.EndTime, cb.Status, message, cb.Id)
+	query := fmt.Sprintf("UPDATE mdl_backup_courses SET laststarttime=%d, lastendtime=%d, laststatus=%d, message='%s' WHERE id=%d", cb.StartTime, cb.EndTime, cb.Status, message, cb.Id)
+	fmt.Println("updateRow: ", query)
 
 	var result sql.Result
 	result, err = db.Exec(query)
