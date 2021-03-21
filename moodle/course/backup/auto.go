@@ -52,6 +52,7 @@ func (ab AutoBackup) Run() (err error) {
 	if ids, err = ab.getCourses(); err != nil {
 		return
 	}
+	log.Printf("Backing up %d Courses\n", len(ids))
 
 	courses := make(chan uint64, len(ids))
 	results := make(chan int, len(ids))
@@ -91,8 +92,18 @@ func (ab AutoBackup) worker(id int, courses <-chan uint64, results chan<- int) {
 
 // getCourses returns course ids to backup
 func (ab AutoBackup) getCourses() (ids []uint64, err error) {
-	query := fmt.Sprintf("SELECT id FROM mdl_course ORDER BY id DESC")
-	var db database.Database = ab.cfg.DB()
+	var cfg config.Config = ab.cfg
+	var db database.Database = cfg.DB()
+	var join, where string
+
+	if cfg.GetConf("contextlocking").AsBool() {
+		join, where, err = ab.sqlFrozenContexts()
+		if err != nil {
+			return
+		}
+	}
+	query := fmt.Sprintf("SELECT c.id FROM mdl_course c %s %s ORDER BY c.id DESC",
+		join, where)
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -112,6 +123,27 @@ func (ab AutoBackup) getCourses() (ids []uint64, err error) {
 	// Check for errors from iterating over rows.
 	err = rows.Err()
 
+	return
+}
+
+func (ab AutoBackup) sqlFrozenContexts() (join, where string, err error) {
+	var db database.Database = ab.cfg.DB()
+	where = ""
+	join = fmt.Sprintf("JOIN mdl_context ctx ON ctx.contextlevel=%d AND ctx.locked=0 AND ctx.instanceid = c.id", moodle.CONTEXT_COURSE)
+
+	var frozenCats []moodle.Context
+	frozenCats, err = moodle.FrozenContexts(db, moodle.CONTEXT_COURSECAT)
+	if err != nil {
+		return
+	}
+	for _, category := range frozenCats {
+		cond := fmt.Sprintf("ctx.path NOT LIKE '%s/%%'", category.Path)
+		if len(where) == 0 {
+			where = "WHERE " + cond
+			continue
+		}
+		where += " AND " + cond
+	}
 	return
 }
 
@@ -236,6 +268,7 @@ func (ab AutoBackup) removeExcessBackupsFromDir(id uint64) (err error) {
 	return
 }
 
+// getAutoBackupsFromCourse fetches course backup files stored in moodledata
 func (ab AutoBackup) getAutoBackupsFromCourse(id uint64) (files []storage.StoredFile, err error) {
 	var db database.Database = ab.cfg.DB()
 	var cctx moodle.Context
@@ -276,29 +309,26 @@ func (ab AutoBackup) getAutoBackupsFromCourse(id uint64) (files []storage.Stored
 func LoadAutoBackup(cfg config.Config) (ab AutoBackup, err error) {
 	ab.cfg = cfg
 
-	intVal, err := strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_active"))
-	if err != nil {
-		return
-	}
-	ab.active = intVal > 0
+	ab.active = cfg.GetPluginConf("backup", "backup_auto_active").AsBool()
 
-	ab.maxkept, err = strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_max_kept"))
+	ab.maxkept, err = cfg.GetPluginConf("backup", "backup_auto_max_kept").AsInt()
 	if err != nil {
 		return
 	}
 
-	intVal, err = strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_storage"))
+	var intVal int
+	intVal, err = cfg.GetPluginConf("backup", "backup_auto_storage").AsInt()
 	if err != nil {
 		return
 	}
 	ab.storage = Storage(intVal)
-	ab.dest = cfg.GetPluginConf("backup", "backup_auto_destination")
+	ab.dest = string(cfg.GetPluginConf("backup", "backup_auto_destination"))
 
-	intVal, err = strconv.Atoi(cfg.GetPluginConf("backup", "backup_auto_skip_modif_prev"))
+	intVal, err = cfg.GetPluginConf("backup", "backup_auto_skip_modif_prev").AsInt()
 	if err != nil {
 		return
 	}
-	ab.skipmodifprev = intVal > 0
+	ab.skipmodifprev = cfg.GetPluginConf("backup", "backup_auto_skip_modif_prev").AsBool()
 
 	return
 }

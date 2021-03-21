@@ -4,11 +4,16 @@ package config
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sysbind/mash/moodle/database"
 )
+
+// ConfigValue represents value from mdl_config or mdl_config_plugins
+type ConfigValue string
 
 // Config struct holds information from moodle's config.php
 type Config struct {
@@ -124,6 +129,29 @@ func (cfg Config) DataRoot() string {
 }
 
 // currently for unit testing only
-func (cfg *Config) DirRoot() string {
+func (cfg Config) DirRoot() string {
 	return cfg.dirroot
+}
+
+// GetConf gets single configuration value from config table
+func (cfg Config) GetConf(name string) (value ConfigValue) {
+	query := fmt.Sprintf("SELECT value FROM mdl_config WHERE name='%s'", name)
+
+	err := cfg.db.QueryRow(query).Scan(&value)
+	if err != nil {
+		log.Fatalf("GetConf: %v (%s)", err, query)
+	}
+	return
+}
+
+func (val ConfigValue) AsBool() bool {
+	if val == "0" {
+		return false
+	}
+	return true
+}
+
+func (val ConfigValue) AsInt() (intval int, err error) {
+	intval, err = strconv.Atoi(string(val))
+	return
 }

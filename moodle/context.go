@@ -3,6 +3,7 @@
 package moodle
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/sysbind/mash/moodle/database"
@@ -29,6 +30,7 @@ type Context struct {
 	Locked     int
 }
 
+// CourseContext returns Context record for specific course
 func CourseContext(db database.Database, cid uint64) (ctx Context, err error) {
 	query := fmt.Sprintf(`SELECT * FROM mdl_context WHERE contextlevel = %d AND
 		 instanceid = %d`, CONTEXT_COURSE, cid)
@@ -40,6 +42,40 @@ func CourseContext(db database.Database, cid uint64) (ctx Context, err error) {
 		&ctx.Depth,
 		&ctx.Locked,
 	)
+	return
+}
+
+// FrozenContexts retruns slice of Contexts which have their "locked" field on.
+func FrozenContexts(db database.Database, level ContextLevel) (contexts []Context, err error) {
+	query := fmt.Sprintf(`SELECT * FROM mdl_context WHERE contextlevel = %d AND locked > 0`, level)
+
+	var rows *sql.Rows
+	rows, err = db.Query(query)
+	if err != nil {
+		return
+	}
+
+	defer rows.Close()
+
+	contexts = make([]Context, 0)
+	for rows.Next() {
+		var ctx Context
+		err = rows.Scan(&ctx.Id,
+			&ctx.Level,
+			&ctx.InstanceId,
+			&ctx.Path,
+			&ctx.Depth,
+			&ctx.Locked)
+
+		if err != nil {
+			return
+		}
+		contexts = append(contexts, ctx)
+	}
+
+	// Check for errors from iterating over rows.
+	err = rows.Err()
+
 	return
 }
 

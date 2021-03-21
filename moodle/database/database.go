@@ -4,6 +4,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -46,8 +47,12 @@ func (db *Database) Ping() (err error) {
 	return
 }
 
-func (db *Database) Query(query string) (*sql.Rows, error) {
-	return db.pool.QueryContext(db.ctx, query)
+func (db *Database) Query(query string) (rows *sql.Rows, err error) {
+	rows, err = db.pool.QueryContext(db.ctx, query)
+	if err != nil {
+		log.Println("Query Failed", query)
+	}
+	return
 }
 
 func (db *Database) QueryRow(query string) *sql.Row {

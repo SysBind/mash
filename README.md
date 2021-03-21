@@ -10,6 +10,15 @@ Replaces the regular automated backups task with more efficient, concurrent, con
 
 It operates by the definitions from Moodle's settings for automated backups from the database.
 
+_Respected Settings_
+- backup_auto_active
+- backup_auto_max_kept
+- backup_auto_storage
+- backup_auto_destination
+- backup_auto_skip_modif_prev
+In addition, if [https://docs.moodle.org/310/en/Context_freezing](contextlocking) is true,
+Frozen courses and courses under frozen categories will be skipped.
+
 
 ## moodle go module
 

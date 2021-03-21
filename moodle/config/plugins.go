@@ -7,7 +7,7 @@ import (
 )
 
 // GetPluginConf gets single configuration value from config_plugins table
-func (cfg Config) GetPluginConf(plugin, name string) (value string) {
+func (cfg Config) GetPluginConf(plugin, name string) (value ConfigValue) {
 	query := fmt.Sprintf("SELECT value FROM mdl_config_plugins WHERE plugin='%s' AND name='%s'", plugin, name)
 
 	err := cfg.db.QueryRow(query).Scan(&value)
@@ -18,7 +18,7 @@ func (cfg Config) GetPluginConf(plugin, name string) (value string) {
 }
 
 // SetPluginConf sets single configuration value in config_plugins table
-func (cfg Config) SetPluginConf(plugin, name, value string) {
+func (cfg Config) SetPluginConf(plugin, name string, value ConfigValue) {
 	// get current config
 	curval := cfg.GetPluginConf(plugin, name)
 	if value == curval {
