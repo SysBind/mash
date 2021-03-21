@@ -1,7 +1,11 @@
-## Mash - Alternative Moodle Shell Written in GO
+## Mash - Alternative Moodle Shell Written in Go
 
 ## Improved Moodle Automated Course Backup
 
+Copy moodle/testdata/automated_backup_single.php under Moodle's admin/cli.
+(helper scripts will be embedded in the Mash binary in the future)
+
+From Moodle's root:
 ```mash autobackup```
 
 Drop-in replacement for Moodle's ./admin/cli/automated_backups.php or Moodle's regular cron running automated backups.
