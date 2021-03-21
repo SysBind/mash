@@ -20,8 +20,8 @@ _Respected Settings_
 - backup_auto_storage
 - backup_auto_destination
 - backup_auto_skip_modif_prev
-In addition, if [contextlocking](https://docs.moodle.org/310/en/Context_freezing) is true,
-Frozen courses and courses under frozen categories will be skipped.
+
+In addition, if [contextlocking](https://docs.moodle.org/310/en/Context_freezing) setting is enabled, Frozen courses and courses under frozen categories will be skipped.
 
 
 ## moodle go module
